@@ -147,15 +147,16 @@
   .search-wrap {
     position: relative;
     display: flex; align-items: center;
+    width: 100%;
   }
   .search-wrap svg { position: absolute; left: 10px; color: var(--text-muted); pointer-events: none; }
   #searchInput {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
     color: var(--text); border-radius: 50px; padding: 0.5rem 1rem 0.5rem 2.2rem;
     font-size: 0.85rem; font-family: 'DM Sans', sans-serif; outline: none;
-    width: 200px; transition: all 0.2s;
+    width: 100%; transition: border-color 0.2s, background 0.2s;
   }
-  #searchInput:focus { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); width: 240px; }
+  #searchInput:focus { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
   #searchInput::placeholder { color: var(--text-muted); }
 
   /* NOTES GRID */
@@ -392,19 +393,146 @@
   .stat-value { font-size: 1.3rem; font-weight: 700; color: var(--text); font-family: 'Caveat', cursive; }
   .stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
 
-  /* RESPONSIVE */
-  @media (max-width: 600px) {
-    header { padding: 0 1rem; }
-    .main-wrap { padding: 1rem; }
-    #notesGrid { grid-template-columns: 1fr 1fr; gap: 1rem; }
-    .stats-bar { gap: 1rem; padding: 0.7rem 1rem; }
-    .modal { border-radius: 16px; }
-    #searchInput { width: 140px; }
-    #searchInput:focus { width: 160px; }
-    .logo { font-size: 1.5rem; }
+  /* ── RESPONSIVE MOBILE-FIRST ─────────────────────────────────────── */
+
+  /* Tablet (≤768px) */
+  @media (max-width: 768px) {
+    #notesGrid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
   }
+
+  /* Mobile (≤600px) */
+  @media (max-width: 600px) {
+    /* Header: logo + solo bottone "+" */
+    header {
+      padding: 0 1rem;
+      height: 56px;
+    }
+    .logo { font-size: 1.45rem; }
+
+    /* Nascondi view-toggle su mobile, occupa spazio inutile */
+    .view-toggle { display: none; }
+
+    /* Bottone nuova nota: solo icona "+" */
+    .btn-primary .btn-label { display: none; }
+    .btn-primary {
+      width: 40px; height: 40px;
+      padding: 0; border-radius: 50%;
+      justify-content: center;
+      font-size: 1.3rem;
+    }
+
+    /* Main padding ridotto */
+    .main-wrap { padding: 0.85rem; }
+
+    /* Stats bar: compatta, scroll orizzontale */
+    .stats-bar {
+      padding: 0.65rem 0.9rem;
+      gap: 0;
+      justify-content: space-between;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+    }
+    .stat-item { min-width: 0; flex: 1; align-items: center; }
+    .stat-value { font-size: 1.15rem; }
+    .stat-label { font-size: 0.62rem; }
+    /* Nascondi il bottone Categorie nella stats bar su mobile, lo mettiamo nella filter bar */
+    .stats-bar > div:last-child { display: none; }
+
+    /* Filter bar: tutto su una riga orizzontale scrollabile */
+    .filter-bar {
+      flex-wrap: nowrap;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 0.4rem;
+      margin-bottom: 1rem;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .filter-label { display: none; } /* nasconde "CATEGORIE" su mobile */
+
+    .categories-scroll {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      flex: unset;
+      gap: 0.4rem;
+      scrollbar-width: none;
+    }
+    .categories-scroll::-webkit-scrollbar { display: none; }
+
+    /* Search: full width sotto la filter bar */
+    .search-wrap { width: 100%; }
+    #searchInput {
+      width: 100%;
+      font-size: 0.9rem;
+    }
+    #searchInput:focus { width: 100%; }
+
+    /* Bottone categorie inline nella filter bar */
+    .filter-bar .btn-ghost {
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 0.35rem 0.7rem;
+    }
+
+    /* Grid note: 1 colonna su mobile stretto, 2 su medio */
+    #notesGrid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+    }
+
+    /* Card note più compatte */
+    .note-card {
+      padding: 0.9rem 0.85rem 0.75rem;
+      min-height: 120px;
+      border-radius: 10px;
+    }
+    .note-title { font-size: 1.1rem; }
+    .note-body { font-size: 1rem; }
+    .note-footer { margin-top: 0.6rem; padding-top: 0.5rem; }
+    .note-date { display: none; } /* troppo stretto su 2 colonne */
+
+    /* Azioni card sempre visibili su touch */
+    .note-actions { opacity: 1; }
+    .note-action-btn { width: 26px; height: 26px; font-size: 0.7rem; }
+
+    /* Modal: bottom sheet su mobile */
+    .modal-overlay {
+      align-items: flex-end;
+      padding: 0;
+    }
+    .modal {
+      border-radius: 20px 20px 0 0;
+      max-width: 100%;
+      width: 100%;
+      max-height: 92vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-body { padding: 1.1rem 1.1rem; gap: 0.9rem; }
+    .modal-header { padding: 1rem 1.1rem; }
+    .modal-footer { padding: 1rem 1.1rem; }
+
+    /* Color swatches: più grandi per il touch */
+    .color-swatch { width: 36px; height: 36px; }
+    .text-color-swatch { width: 32px; height: 32px; font-size: 0.8rem; }
+
+    /* Nascondi preview nel modal su mobile (occupa troppo spazio) */
+    .modal-body .form-group:has(#notePreview) { display: none; }
+
+    /* Toast: più basso su mobile per non coprire navbar */
+    #toast { bottom: 1.2rem; font-size: 0.82rem; }
+  }
+
+  /* Mobile molto stretto (≤380px): 1 sola colonna */
   @media (max-width: 380px) {
     #notesGrid { grid-template-columns: 1fr; }
+    .note-card { min-height: unset; }
+    .note-date { display: none; }
   }
 
   /* View toggle */
@@ -454,7 +582,7 @@
     </div>
     <button class="btn btn-primary" onclick="openModal()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nuova nota
+      <span class="btn-label">Nuova nota</span>
     </button>
   </div>
 </header>
@@ -468,10 +596,11 @@
   <div class="filter-bar">
     <span class="filter-label">Categorie</span>
     <div class="categories-scroll" id="categoriesBar"></div>
-    <div class="search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchInput" placeholder="Cerca..." oninput="renderNotes()">
-    </div>
+    <button class="btn btn-ghost" onclick="openCatModal()" style="font-size:0.8rem;flex-shrink:0">🏷️</button>
+  </div>
+  <div class="search-wrap" style="margin-bottom:1.3rem">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="searchInput" placeholder="Cerca..." oninput="renderNotes()">
   </div>
 
   <!-- Grid -->
@@ -911,3 +1040,4 @@ renderAll();
 </script>
 </body>
 </html>
+
