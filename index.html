@@ -441,6 +441,79 @@
   }
 
   .pin-btn.active { color: var(--accent2) !important; }
+
+  /* UPDATE MODAL */
+  #updateModal {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(10px);
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  #updateModal.open { display: flex; }
+  .update-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #e94560, #f5a623);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 0.5rem; flex-shrink: 0;
+    box-shadow: 0 4px 20px rgba(233,69,96,0.4);
+  }
+  .update-body-top { text-align: center; padding: 1.5rem 1.5rem 1rem; }
+  .update-body-top h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.35rem; }
+  .update-body-top p { font-size: 0.83rem; color: var(--text-muted); line-height: 1.5; }
+  .update-section {
+    margin: 0 1.2rem 0.75rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; overflow: hidden;
+  }
+  .update-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.85rem 1rem; gap: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .update-row:last-child { border-bottom: none; }
+  .update-row-info { display: flex; flex-direction: column; gap: 0.12rem; flex: 1; min-width: 0; }
+  .update-row-title { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+  .update-row-desc { font-size: 0.74rem; color: var(--text-muted); }
+  .update-row-action {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text); border-radius: 8px; padding: 0.42rem 0.85rem;
+    font-size: 0.8rem; font-weight: 500; cursor: pointer; white-space: nowrap;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s; flex-shrink: 0;
+  }
+  .update-row-action:hover { background: rgba(255,255,255,0.15); }
+  .update-row-action.danger { color: #f87171; border-color: rgba(248,113,113,0.25); }
+  .update-row-action.danger:hover { background: rgba(248,113,113,0.15); }
+  .update-row-action.go { background: var(--accent); border-color: transparent; color: #fff; }
+  .update-row-action.go:hover { background: #c73652; }
+  .cache-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #22c55e; display: inline-block; margin-right: 0.3rem;
+  }
+  .cache-dot.off { background: #64748b; }
+  #updateBtn { position: relative; }
+  #updateBtn .badge {
+    display: none; position: absolute; top: -3px; right: -3px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--bg);
+    animation: pulse 1.5s infinite;
+  }
+  #updateBtn.has-update .badge { display: block; }
+  #updateBtn.has-update { color: var(--accent2) !important; border-color: rgba(245,166,35,0.4) !important; }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.7; }
+  }
+  @media (max-width: 600px) {
+    #updateModal { align-items: flex-end; padding: 0; }
+    #updateModal .modal {
+      border-radius: 22px 22px 0 0; max-width: 100%; width: 100%;
+      max-height: 88vh; overflow-y: auto;
+    }
+    #updateModal .modal::before {
+      content: ''; display: block; width: 40px; height: 4px;
+      background: rgba(255,255,255,0.2); border-radius: 2px; margin: 0.75rem auto 0;
+    }
+  }
 </style>
 </head>
 <body>
@@ -452,9 +525,16 @@
       <button class="view-btn active" id="gridViewBtn" title="Vista griglia" onclick="setView('grid')">⊞</button>
       <button class="view-btn" id="listViewBtn" title="Vista lista" onclick="setView('list')">☰</button>
     </div>
+    <button class="btn btn-icon" id="updateBtn" onclick="openUpdateModal()" title="Aggiorna app">
+      <span class="badge"></span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
     <button class="btn btn-primary" onclick="openModal()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nuova nota
+      <span class="btn-label">Nuova nota</span>
     </button>
   </div>
 </header>
@@ -555,6 +635,57 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeCatModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: aggiornamento / cache -->
+<div id="updateModal" onclick="closeUpdateModalOnBg(event)">
+  <div class="modal" style="max-width:400px">
+    <div class="update-body-top">
+      <div class="update-icon">🔄</div>
+      <h3>Aggiornamento & Cache</h3>
+      <p>Gestisci la cache dell'app e controlla se ci sono aggiornamenti disponibili.</p>
+    </div>
+
+    <div class="update-section">
+      <div class="update-row">
+        <div class="update-row-info">
+          <div class="update-row-title">
+            <span class="cache-dot" id="cacheDot"></span>Stato cache
+          </div>
+          <div class="update-row-desc" id="cacheDesc">Controllo in corso...</div>
+        </div>
+        <button class="update-row-action" onclick="checkForUpdates()">Controlla</button>
+      </div>
+      <div class="update-row">
+        <div class="update-row-info">
+          <div class="update-row-title">🚀 Aggiorna app</div>
+          <div class="update-row-desc">Svuota la cache e ricarica l'ultima versione</div>
+        </div>
+        <button class="update-row-action go" onclick="clearCacheAndReload()">Aggiorna</button>
+      </div>
+      <div class="update-row">
+        <div class="update-row-info">
+          <div class="update-row-title">🗑️ Svuota solo cache</div>
+          <div class="update-row-desc">Rimuove i file in cache senza ricaricare</div>
+        </div>
+        <button class="update-row-action" onclick="clearCacheOnly()">Svuota</button>
+      </div>
+    </div>
+
+    <div class="update-section">
+      <div class="update-row">
+        <div class="update-row-info">
+          <div class="update-row-title">⚠️ Reset completo</div>
+          <div class="update-row-desc">Cancella cache + tutte le note salvate</div>
+        </div>
+        <button class="update-row-action danger" onclick="hardReset()">Reset</button>
+      </div>
+    </div>
+
+    <div style="padding: 0 1.2rem 1.2rem">
+      <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="closeUpdateModal()">Chiudi</button>
     </div>
   </div>
 </div>
@@ -857,12 +988,168 @@ document.addEventListener('keydown', e => {
   if ((e.ctrlKey||e.metaKey) && e.key === 'n') { e.preventDefault(); openModal(); }
 });
 
-// ─── PWA: SERVICE WORKER ─────────────────────────────────────────────────────
+// ─── PWA: SERVICE WORKER + AGGIORNAMENTI ────────────────────────────────────
+let swRegistration = null;
+let newWorkerWaiting = false;
+
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  window.addEventListener('load', async () => {
+    try {
+      swRegistration = await navigator.serviceWorker.register('./sw.js');
+
+      // Controlla aggiornamenti subito e ogni 60 secondi
+      swRegistration.update();
+      setInterval(() => swRegistration.update(), 60000);
+
+      // Nuovo SW in attesa → mostra badge
+      swRegistration.addEventListener('updatefound', () => {
+        const newWorker = swRegistration.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            newWorkerWaiting = true;
+            document.getElementById('updateBtn').classList.add('has-update');
+            showUpdateBanner();
+          }
+        });
+      });
+
+      // Se già c'è un SW in waiting al caricamento
+      if (swRegistration.waiting && navigator.serviceWorker.controller) {
+        newWorkerWaiting = true;
+        document.getElementById('updateBtn').classList.add('has-update');
+      }
+
+    } catch(e) { console.warn('SW error:', e); }
   });
 }
+
+// Banner notifica aggiornamento disponibile
+function showUpdateBanner() {
+  if (document.getElementById('newVersionBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'newVersionBanner';
+  b.innerHTML = `<div style="position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#16213e;border:1px solid rgba(245,166,35,0.4);border-radius:14px;padding:.75rem 1.1rem;display:flex;align-items:center;gap:.75rem;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9998;max-width:340px;width:calc(100% - 2rem);animation:noteIn .4s cubic-bezier(.34,1.56,.64,1)"><span style="font-size:1.3rem">✨</span><div style="flex:1;font-size:.82rem;color:#eaeaea">Nuova versione disponibile!</div><button onclick="clearCacheAndReload()" style="background:#f5a623;color:#1a1a2e;border:none;border-radius:8px;padding:.38rem .8rem;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">Aggiorna</button><button onclick="document.getElementById('newVersionBanner').remove()" style="background:transparent;border:none;color:#8892a4;cursor:pointer;font-size:.9rem;padding:0">✕</button></div>`;
+  document.body.appendChild(b);
+}
+
+// Apri modal aggiornamento
+function openUpdateModal() {
+  updateCacheStatus();
+  document.getElementById('updateModal').classList.add('open');
+}
+function closeUpdateModal() {
+  document.getElementById('updateModal').classList.remove('open');
+}
+function closeUpdateModalOnBg(e) {
+  if (e.target === document.getElementById('updateModal')) closeUpdateModal();
+}
+
+// Controlla stato cache
+async function updateCacheStatus() {
+  const dot = document.getElementById('cacheDot');
+  const desc = document.getElementById('cacheDesc');
+  if (!('caches' in window)) {
+    dot.className = 'cache-dot off';
+    desc.textContent = 'Cache non supportata dal browser';
+    return;
+  }
+  try {
+    const keys = await caches.keys();
+    if (keys.length === 0) {
+      dot.className = 'cache-dot off';
+      desc.textContent = 'Nessuna cache attiva';
+    } else {
+      const cache = await caches.open(keys[0]);
+      const items = await cache.keys();
+      dot.className = 'cache-dot';
+      desc.textContent = `Attiva · ${items.length} file in cache${newWorkerWaiting ? ' · ⚡ Aggiornamento pronto!' : ''}`;
+    }
+  } catch {
+    dot.className = 'cache-dot off';
+    desc.textContent = 'Impossibile leggere la cache';
+  }
+}
+
+// Controlla aggiornamenti dal server
+async function checkForUpdates() {
+  const desc = document.getElementById('cacheDesc');
+  desc.textContent = '⏳ Controllo in corso...';
+  try {
+    if (swRegistration) await swRegistration.update();
+    setTimeout(() => {
+      if (newWorkerWaiting) {
+        desc.textContent = '⚡ Aggiornamento disponibile!';
+        document.getElementById('updateBtn').classList.add('has-update');
+      } else {
+        desc.textContent = '✓ Sei già alla versione più recente';
+        updateCacheStatus();
+      }
+    }, 1200);
+  } catch {
+    desc.textContent = '⚠️ Impossibile controllare (offline?)';
+  }
+}
+
+// Svuota cache e ricarica (aggiornamento completo)
+async function clearCacheAndReload() {
+  closeUpdateModal();
+  showToast('🔄 Aggiornamento in corso...', '#f5a623');
+  try {
+    // Manda messaggio al SW in waiting per attivarlo
+    if (swRegistration?.waiting) {
+      swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    // Svuota tutte le cache
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    // Aspetta un attimo poi ricarica
+    setTimeout(() => location.reload(true), 800);
+  } catch {
+    location.reload(true);
+  }
+}
+
+// Svuota solo cache senza ricaricare
+async function clearCacheOnly() {
+  if (!('caches' in window)) {
+    showToast('⚠️ Cache non supportata', '#f59e0b');
+    return;
+  }
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.map(k => caches.delete(k)));
+    showToast('🧹 Cache svuotata!', '#22c55e');
+    setTimeout(updateCacheStatus, 300);
+  } catch {
+    showToast('⚠️ Errore svuotamento cache', '#ef4444');
+  }
+}
+
+// Reset completo: cache + dati locali
+async function hardReset() {
+  if (!confirm('⚠️ Sei sicuro? Verranno cancellate TUTTE le note e la cache.\nQuesta operazione è irreversibile.')) return;
+  try {
+    // Svuota cache
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    // Cancella localStorage
+    localStorage.removeItem('stickymind_notes');
+    localStorage.removeItem('stickymind_cats');
+    // Disregistra SW
+    if (swRegistration) await swRegistration.unregister();
+    showToast('🗑️ Reset completato, ricarico...', '#ef4444');
+    setTimeout(() => location.reload(true), 1200);
+  } catch {
+    localStorage.clear();
+    location.reload(true);
+  }
+}
+
+// ─── PWA: INSTALL PROMPT ─────────────────────────────────────────────────────
 
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
