@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>StickyMind — Le tue note</title>
 
-<!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a1a2e">
 <meta name="mobile-web-app-capable" content="yes">
@@ -17,7 +16,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon-16x16.png">
 
-<!-- SEO / Open Graph -->
 <meta name="description" content="La tua app di note in stile Post-it. Crea, categorizza e colora le tue note ovunque — funziona anche offline.">
 <meta property="og:title" content="StickyMind — Le tue note">
 <meta property="og:description" content="App di note Post-it con categorie, colori e supporto offline.">
@@ -248,6 +246,10 @@
   }
   .note-date {
     font-size: 0.7rem; color: rgba(0,0,0,0.4);
+    display: flex; flex-direction: column; align-items: flex-end;
+  }
+  .note-due {
+      color: #b91c1c; font-weight: 700; font-size: 0.75rem; margin-top: 2px;
   }
 
   /* Empty state */
@@ -277,6 +279,8 @@
     box-shadow: 0 24px 64px rgba(0,0,0,0.5);
     overflow: hidden;
     animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    max-height: 90vh;
+    display: flex; flex-direction: column;
   }
   @keyframes modalIn {
     from { opacity: 0; transform: scale(0.9) translateY(20px); }
@@ -287,10 +291,11 @@
     padding: 1.3rem 1.5rem;
     border-bottom: 1px solid rgba(255,255,255,0.07);
     display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
   }
   .modal-header h2 { font-size: 1.1rem; font-weight: 600; }
 
-  .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.1rem; }
+  .modal-body { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.1rem; overflow-y: auto; }
 
   .form-group { display: flex; flex-direction: column; gap: 0.45rem; }
   .form-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
@@ -348,6 +353,7 @@
     padding: 1.2rem 1.5rem;
     border-top: 1px solid rgba(255,255,255,0.07);
     display: flex; gap: 0.7rem; justify-content: flex-end;
+    flex-shrink: 0;
   }
 
   /* CATEGORY MANAGER */
@@ -541,10 +547,8 @@
 
 <div class="main-wrap">
 
-  <!-- Stats -->
   <div class="stats-bar" id="statsBar"></div>
 
-  <!-- Filter bar -->
   <div class="filter-bar">
     <span class="filter-label">Categorie</span>
     <div class="categories-scroll" id="categoriesBar"></div>
@@ -554,11 +558,9 @@
     </div>
   </div>
 
-  <!-- Grid -->
   <div id="notesGrid"></div>
 </div>
 
-<!-- Modal: crea/modifica nota -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOnBg(event)">
   <div class="modal">
     <div class="modal-header">
@@ -593,6 +595,11 @@
           <select class="form-input form-select" id="noteCategory" style="flex:1"></select>
         </div>
       </div>
+      
+      <div class="form-group">
+        <label class="form-label">Scadenza ⏰ (Opzionale)</label>
+        <input type="datetime-local" class="form-input" id="noteDueDate">
+      </div>
 
       <div class="form-group">
         <label class="form-label">Anteprima</label>
@@ -613,7 +620,6 @@
   </div>
 </div>
 
-<!-- Modal: gestione categorie -->
 <div class="modal-overlay" id="catModalOverlay" onclick="closeCatModalOnBg(event)">
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
@@ -639,7 +645,6 @@
   </div>
 </div>
 
-<!-- Modal: aggiornamento / cache -->
 <div id="updateModal" onclick="closeUpdateModalOnBg(event)">
   <div class="modal" style="max-width:400px">
     <div class="update-body-top">
@@ -718,6 +723,39 @@ function save() {
   localStorage.setItem('stickymind_cats', JSON.stringify(categories));
 }
 
+// ─── NOTIFICATIONS ENGINE ────────────────────────────────────────────────────
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+    Notification.requestPermission();
+  }
+}
+
+function checkReminders() {
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  
+  const now = Date.now();
+  let updated = false;
+
+  notes.forEach(n => {
+    if (n.dueDate && now >= n.dueDate && !n.notified) {
+      new Notification("Scadenza Nota: " + (n.title || "Promemoria"), {
+        body: n.body.substring(0, 100),
+        icon: "icons/icon-192x192.png"
+      });
+      n.notified = true;
+      updated = true;
+    }
+  });
+
+  if (updated) {
+      save();
+      renderNotes();
+  }
+}
+
+// Avvia il controllo ogni 30 secondi
+setInterval(checkReminders, 30000);
+
 // ─── RENDER ──────────────────────────────────────────────────────────────────
 function renderAll() {
   renderStats();
@@ -772,6 +810,12 @@ function renderNotes() {
 
 function noteCardHTML(n) {
   const date = new Date(n.createdAt).toLocaleDateString('it-IT', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  let dueDateHtml = '';
+  if (n.dueDate) {
+      const d = new Date(n.dueDate).toLocaleString('it-IT', {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'});
+      dueDateHtml = `<span class="note-due" style="${Date.now() > n.dueDate ? 'text-decoration:line-through; opacity:0.6' : ''}">⏰ ${d}</span>`;
+  }
+  
   const bodyPreview = n.body.length > 200 ? n.body.slice(0,200)+'…' : n.body;
   return `
     <div class="note-card ${n.pinned?'pinned':''}" style="background:${n.color||'#fef08a'}" data-id="${n.id}">
@@ -786,7 +830,10 @@ function noteCardHTML(n) {
       <div class="note-body" style="color:${n.textColor||'#1a1a2e'}">${escHtml(bodyPreview)}</div>
       <div class="note-footer">
         <span class="note-category">${escHtml(n.category||'—')}</span>
-        <span class="note-date">${date}</span>
+        <div class="note-date">
+            <span>${date}</span>
+            ${dueDateHtml}
+        </div>
       </div>
     </div>
   `;
@@ -852,11 +899,13 @@ function openModal() {
   selectedTextColor = '#1a1a2e';
   document.getElementById('noteTitle').value = '';
   document.getElementById('noteBody').value = '';
+  document.getElementById('noteDueDate').value = '';
   document.getElementById('modalTitle').textContent = '✏️ Nuova nota';
   buildColorPicker();
   buildTextColorPicker();
   buildCategorySelect();
   updatePreview();
+  requestNotificationPermission(); // Chiedi permessi quando apre il modal
   document.getElementById('modalOverlay').classList.add('open');
   setTimeout(() => document.getElementById('noteTitle').focus(), 100);
 }
@@ -869,6 +918,17 @@ function openEditModal(id) {
   selectedTextColor = n.textColor || '#1a1a2e';
   document.getElementById('noteTitle').value = n.title;
   document.getElementById('noteBody').value = n.body;
+  
+  if (n.dueDate) {
+      // Formato per datetime-local: YYYY-MM-DDTHH:MM
+      const d = new Date(n.dueDate);
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, 16);
+      document.getElementById('noteDueDate').value = localISOTime;
+  } else {
+      document.getElementById('noteDueDate').value = '';
+  }
+
   document.getElementById('modalTitle').textContent = '✏️ Modifica nota';
   buildColorPicker();
   buildTextColorPicker();
@@ -905,17 +965,29 @@ function saveNote() {
   const title = document.getElementById('noteTitle').value.trim();
   const body = document.getElementById('noteBody').value.trim();
   const category = document.getElementById('noteCategory').value;
+  const dueDateVal = document.getElementById('noteDueDate').value;
+  const dueDate = dueDateVal ? new Date(dueDateVal).getTime() : null;
+  
   if (!title && !body) { showToast('Scrivi qualcosa!', '#ef4444'); return; }
 
   if (editingId) {
     const idx = notes.findIndex(n => n.id === editingId);
     if (idx > -1) {
-      notes[idx] = { ...notes[idx], title, body, category, color: selectedColor, textColor: selectedTextColor, updatedAt: Date.now() };
+      // Se la data cambia, resetta il flag di notifica
+      const oldDue = notes[idx].dueDate;
+      const notified = (oldDue === dueDate) ? notes[idx].notified : false;
+      
+      notes[idx] = { 
+          ...notes[idx], 
+          title, body, category, dueDate, notified,
+          color: selectedColor, textColor: selectedTextColor, updatedAt: Date.now() 
+      };
     }
   } else {
     notes.unshift({
       id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36),
-      title, body, category,
+      title, body, category, dueDate,
+      notified: false,
       color: selectedColor, textColor: selectedTextColor,
       createdAt: Date.now(), pinned: false
     });
