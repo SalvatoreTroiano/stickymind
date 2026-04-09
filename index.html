@@ -159,12 +159,12 @@
   /* NOTES GRID */
   #notesGrid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 1.25rem;
     align-items: start;
   }
 
-  /* NOTE CARD */
+  /* NOTE CARD - CORREZIONE PER NOTE LUNGHE */
   .note-card {
     border-radius: 12px;
     padding: 1.1rem 1.1rem 0.9rem;
@@ -172,9 +172,51 @@
     break-inside: avoid;
     transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 2px 4px 16px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.2);
-    min-height: 140px;
+    min-height: 160px;
+    max-height: 400px;
     animation: noteIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+    
+    /* Layout flex per mantenere header e footer visibili */
+    display: flex;
+    flex-direction: column;
   }
+  
+  /* Contenitore scrollabile per il corpo della nota */
+  .note-body-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    margin: 0.5rem 0;
+  }
+  
+  .note-body {
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    color: #2d3748;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+  
+  /* Scrollbar personalizzata per il corpo nota */
+  .note-body-wrapper::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .note-body-wrapper::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.05);
+    border-radius: 3px;
+  }
+  
+  .note-body-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.2);
+    border-radius: 3px;
+  }
+  
+  .note-body-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(0,0,0,0.3);
+  }
+  
   .note-card:hover {
     transform: translateY(-3px) rotate(0.5deg);
     box-shadow: 4px 8px 28px rgba(0,0,0,0.35);
@@ -199,6 +241,7 @@
   .note-card-header {
     display: flex; align-items: flex-start; justify-content: space-between;
     margin-bottom: 0.5rem; gap: 0.5rem;
+    flex-shrink: 0;
   }
 
   .note-title {
@@ -225,19 +268,15 @@
   .note-action-btn:hover { background: rgba(0,0,0,0.2); transform: scale(1.1); }
   .note-action-btn.delete:hover { background: rgba(220,38,38,0.25); color: #dc2626; }
 
-  .note-body {
-    font-family: 'Caveat', cursive;
-    font-size: 1.1rem;
-    color: #2d3748;
-    line-height: 1.5;
-    word-break: break-word;
-    white-space: pre-wrap;
-  }
-
+  /* Footer sempre visibile */
   .note-footer {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 0.9rem; padding-top: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
     border-top: 1px solid rgba(0,0,0,0.1);
+    flex-shrink: 0;
   }
   .note-category {
     font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
@@ -408,6 +447,7 @@
     #searchInput { width: 140px; }
     #searchInput:focus { width: 160px; }
     .logo { font-size: 1.5rem; }
+    .note-card { max-height: 350px; }
   }
   @media (max-width: 380px) {
     #notesGrid { grid-template-columns: 1fr; }
@@ -431,11 +471,13 @@
     grid-template-rows: auto;
     gap: 0 1rem;
     min-height: unset;
+    max-height: none;
     padding: 0.8rem 1rem;
     align-items: center;
   }
   #notesGrid.list-view .note-card::before { display: none; }
   #notesGrid.list-view .note-card-header { margin-bottom: 0; }
+  #notesGrid.list-view .note-body-wrapper { overflow: visible; max-height: none; }
   #notesGrid.list-view .note-body { font-size: 0.95rem; }
   #notesGrid.list-view .note-footer { border-top: none; margin-top: 0; padding-top: 0; }
 
@@ -816,7 +858,8 @@ function noteCardHTML(n) {
       dueDateHtml = `<span class="note-due" style="${Date.now() > n.dueDate ? 'text-decoration:line-through; opacity:0.6' : ''}">⏰ ${d}</span>`;
   }
   
-  const bodyPreview = n.body.length > 200 ? n.body.slice(0,200)+'…' : n.body;
+  const bodyPreview = n.body; // Mostra tutto il testo con scroll
+  
   return `
     <div class="note-card ${n.pinned?'pinned':''}" style="background:${n.color||'#fef08a'}" data-id="${n.id}">
       <div class="note-card-header">
@@ -827,7 +870,9 @@ function noteCardHTML(n) {
           <button class="note-action-btn delete" onclick="deleteNote('${n.id}')" title="Elimina">🗑️</button>
         </div>
       </div>
-      <div class="note-body" style="color:${n.textColor||'#1a1a2e'}">${escHtml(bodyPreview)}</div>
+      <div class="note-body-wrapper">
+        <div class="note-body" style="color:${n.textColor||'#1a1a2e'}">${escHtml(bodyPreview)}</div>
+      </div>
       <div class="note-footer">
         <span class="note-category">${escHtml(n.category||'—')}</span>
         <div class="note-date">
@@ -1258,7 +1303,7 @@ if (new URLSearchParams(location.search).get('action') === 'new') {
 // Demo notes if empty
 if (notes.length === 0) {
   notes = [
-    { id:'1', title:'Benvenuto in StickyMind! 🎉', body:'Clicca su "+ Nuova nota" per creare la tua prima nota.\nPuoi cambiare colore, categoria e stile del testo!', category:'Personale', color:'#fef08a', textColor:'#1a1a2e', createdAt:Date.now()-3600000, pinned:true },
+    { id:'1', title:'Benvenuto in StickyMind! 🎉', body:'Clicca su "+ Nuova nota" per creare la tua prima nota.\nPuoi cambiare colore, categoria e stile del testo!\n\nQuesta nota è molto lunga per testare lo scroll interno. Ora puoi vedere che i pulsanti in alto e il footer con categoria e data rimangono sempre visibili, mentre solo il corpo della nota scorre. Questo è molto utile per note molto lunghe!', category:'Personale', color:'#fef08a', textColor:'#1a1a2e', createdAt:Date.now()-3600000, pinned:true },
     { id:'2', title:'Lista spesa 🛒', body:'Pane\nLatte\nUova\nPomodori\nMozzarella', category:'Personale', color:'#86efac', textColor:'#1a1a2e', createdAt:Date.now()-7200000, pinned:false },
     { id:'3', title:'Meeting domani', body:'Call con il team alle 10:00\nAgenda: sprint review + retrospettiva', category:'Lavoro', color:'#93c5fd', textColor:'#1a1a2e', createdAt:Date.now()-1800000, pinned:false },
     { id:'4', title:'Idea progetto 💡', body:'App per tracciare le abitudini quotidiane con gamification', category:'Idee', color:'#c4b5fd', textColor:'#1a1a2e', createdAt:Date.now()-900000, pinned:false },
